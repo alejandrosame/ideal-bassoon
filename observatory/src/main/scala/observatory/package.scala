@@ -7,4 +7,9 @@ package object observatory {
   
   @transient lazy val sparkConf: SparkConf = new SparkConf().setMaster("local").setAppName("ScalaCapstone").set("spark.executor.heartbeatInterval", "20s")
   Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
+  
+  def roundToN(x: Double, n: Int) = {
+    val m = scala.math.pow(10, n)
+    (x * m).round / m
+  }
 }
