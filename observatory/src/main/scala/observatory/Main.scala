@@ -95,32 +95,20 @@ object Main extends App {
   print(s"\n")
   */
   
-  val arg0Color = Color(255, 0, 0)
-    val arg1Color = Color(0, 0, 255)
-    val arg0Location = Location(45.0, -90.0)
-    val arg1Location = Location(-45.0, 0.0)
-    
-    // arg0, arg1, expected
-    val tempList = List( (-56.39718076600975, 1.0),
-                          (-1.0, -80.17478327858342)
-                        )
-                        
-    val locationList = List(Location(90.0,-180.0),
-                            //Location(-27.0,-180.0),
-                            Location(-90.0,-180.0)
-                            )
-    
-    for (temps <- tempList){
-      val arg0 = temps._1
-      val arg1 = temps._2
-    
-      print(s"\nTemperatures ${(arg0,arg1)}\n")
-      
-      val colorScale = List((arg0, arg0Color), (arg1, arg1Color)).toIterable
-      val temperatures = List((arg0Location, arg0), (arg1Location, arg1)).toIterable
-      
-      val image = Visualization.visualize(temperatures, colorScale)
-    }
+  val temperatures = List((Location(45.0,-90.0),10.0), (Location(-45.0,0.0),20.0)) 
+  val colors = List((10.0,Color(255,0,0)), (20.0,Color(0,0,255))) 
+  val tile = Tile(0,0,0)
+  
+  val image = Interaction.tile(temperatures, colors, tile)
+  
+  
+  val temperatures2 = List((Location(45.0,-90.0),20.0), (Location(45.0,90.0),0.0), (Location(0.0,0.0),10.0), 
+                           (Location(-45.0,-90.0),0.0), (Location(-45.0,90.0),20.0)) 
+  val colors2 = List((0.0,Color(255,0,0)), (10.0,Color(0,255,0)), (20.0,Color(0,0,255))) 
+  val tile2 = Tile(0,0,0)
+  
+  val image2 = Interaction.tile(temperatures2, colors2, tile2)
+  
   
   sparkSession.sparkContext.stop()
 }
