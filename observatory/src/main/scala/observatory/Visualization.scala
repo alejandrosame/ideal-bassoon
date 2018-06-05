@@ -180,6 +180,7 @@ object Visualization {
     * @param value The value to interpolate
     * @return The color that corresponds to `value`, according to the color scale defined by `points`
     */
+
   def interpolateColor(points: Iterable[(Temperature, Color)], value: Temperature): Color = {
            
     val (color, prev, next) = computeRange(points, value)
@@ -205,33 +206,31 @@ object Visualization {
                                                                                  Option[(Temperature, Color)], 
                                                                                  Option[(Temperature, Color)]) = {    
     
+    val minTempColor = (Double.MinValue, Color(0,0,0))
+    val maxTempColor = (Double.MaxValue, Color(255,255,255))
+
     def computeRange(points: Iterable[(Temperature, Color)], value: Temperature, 
-                     prev: Option[(Temperature, Color)], 
-                     next: Option[(Temperature, Color)]): (Option[Color], 
-                                                           Option[(Temperature, Color)], 
-                                                           Option[(Temperature, Color)]) = {
-     
-     //print(s"\n${(points, value, prev, next)}\n")
+                     prev: (Temperature, Color),
+                     next: (Temperature, Color)): (Option[Color],
+                                                  (Temperature, Color),
+                                                  (Temperature, Color)) = {
      
      points match {
         case Nil => (None, prev, next)
-        case (`value`, c) :: _ => (Some(c), None, None)
-        case (ptemp, c) :: rest => {
-            if (ptemp < value && prev.isEmpty) computeRange(rest, value, Some((ptemp, c)), next)
-            else if (ptemp < value && !prev.isEmpty){
-              if (ptemp > prev.get._1) computeRange(rest, value, Some((ptemp, c)), next)
-              else computeRange(rest, value, prev, next)
-            }
-            else if (ptemp > value && next.isEmpty) computeRange(rest, value, prev, Some((ptemp, c)))
-            else {
-              if (ptemp < next.get._1) computeRange(rest, value, prev, Some((ptemp, c)))
-              else computeRange(rest, value, prev, next)
-            }
-          }
+        case (`value`, c) :: _ => (Some(c), minTempColor, maxTempColor)
+        case (ptemp, c) :: rest if ptemp < value && ptemp > prev._1 => computeRange(rest, value, (ptemp, c), next)
+        case (ptemp, c) :: rest if ptemp < value && ptemp <= prev._1 => computeRange(rest, value, prev, next)
+        case (ptemp, c) :: rest if ptemp > value && ptemp < next._1 => computeRange(rest, value, prev, (ptemp, c))
+        // Last case is ptemp > value && ptemp >= prev._1
+        case _ => computeRange(points.tail, value, prev, next)
       }}
     
-    //print("\nStart\n")
-    computeRange(points, value, None, None)
+    val (color, min, max) = computeRange(points, value, minTempColor, maxTempColor)
+
+    val returnMin = if (min._1 > Double.MinValue) Some(min) else None
+    val returnMax = if (max._1 < Double.MaxValue) Some(max) else None
+
+    (color, returnMin, returnMax)
   }
   
   def linearInterpolation(x1:Double, y1:Int, x2:Double, y2:Int, x3:Double): Int = {
@@ -244,15 +243,15 @@ object Visualization {
     * @return A 360×180 image where each pixel shows the predicted temperature at its location
     */
   def visualize(temperatures: Iterable[(Location, Temperature)], colors: Iterable[(Temperature, Color)]): Image = {
-    
+
     val width = 360 //pixels
     val height = 180 //pixels
 
     val image = new Array[Pixel](width*height) // new is necessary to allocate space 
 
     for (i <- 0 until width*height) {
-      val x = round(floor(i/width)) // Image is saved as a 1 dimensional array in row format
-      val y = i%width
+      val x = floor(i/width).toInt // Image is saved as a 1 dimensional array in row format
+      val y = (i%width).toInt
 
       val interpolatedColor = interpolateColor(colors, predictTemperature(temperatures, Location(90-y, x-180)))
       
@@ -270,12 +269,11 @@ object Visualization {
     val image = new Array[Pixel](width*height) // new is necessary to allocate space 
 
     for (i <- 0 until width*height) {
-      val x = round(floor(i/width)) // Image is saved as a 1 dimensional array in row format
-      val y = i%width
+      val x = floor(i/width).toInt // Image is saved as a 1 dimensional array in row format
+      val y = (i%width).toInt
 
       val interpolatedColor = interpolateColor(colors, sparkPredictTemperature(temperatures, Location(90-y, x-180)))
       
-      print(s"\nIteration ${i} of ${width*height}\n")
       image(i) = Pixel(interpolatedColor.red, interpolatedColor.green, interpolatedColor.blue, 255)
     }
 
