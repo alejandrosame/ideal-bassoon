@@ -23,7 +23,8 @@ object Visualization2 {
     d10: Temperature,
     d11: Temperature
   ): Temperature = {
-    ???
+    val CellPoint(x, y) = point
+    d00*(1-x)*(1-y) + d10*x*(1-y) + d01*(1-x)*y + d11*x*y
   }
 
   /**
@@ -37,7 +38,39 @@ object Visualization2 {
     colors: Iterable[(Temperature, Color)],
     tile: Tile
   ): Image = {
-    ???
-  }
+    val subtileZoom = 8
+    val width = 256 //pixels
+    val height = 256  //pixels
+    val alpha = 127
+    
+    val Tile(xTile, yTile, zoomTile) = tile
+    // Set starting point based on subtile zoom (pixel precision) 
+    val x0 = xTile * height
+    val y0 = yTile * width
 
+    val image = new Array[Pixel](width*height) // new is necessary to allocate space 
+    
+    val indices = for {
+      i <- 0 until width
+      j <- 0 until height
+    } yield (i, j)
+    
+    indices.par foreach {case (x, y) =>
+      val location = Interaction.tileLocation(Tile(x0+x, y0+y, zoomTile+subtileZoom))
+      
+      val d00 = grid(GridLocation(location.lat.floor.toInt, location.lon.ceil.toInt))
+      val d01 = grid(GridLocation(location.lat.ceil.toInt, location.lon.floor.toInt))
+      val d10 = grid(GridLocation(location.lat.floor.toInt, location.lon.ceil.toInt))
+      val d11 = grid(GridLocation(location.lat.ceil.toInt, location.lon.ceil.toInt))
+      
+      val cellpoint = CellPoint(location.lon - location.lon.floor.toInt, 
+                                location.lat - location.lat.floor.toInt)
+      val interpolatedColor = Visualization.interpolateColor(colors, 
+                                                             bilinearInterpolation(cellpoint, d00, d01, d10, d11))
+
+      image(y*width+x) = Pixel(interpolatedColor.red, interpolatedColor.green, interpolatedColor.blue, alpha)
+    }
+    
+    Image(width, height, image)
+  }
 }
