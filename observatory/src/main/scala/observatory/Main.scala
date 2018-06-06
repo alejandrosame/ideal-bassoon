@@ -3,11 +3,21 @@ import org.apache.log4j.{Level, Logger}
 //import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
+//import scalaz._
+
 
 object Main extends App {
   //Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
   
   val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+  
+  def time[R](block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block    // call-by-name
+    val t1 = System.nanoTime()
+    println("Elapsed time: " + (t1 - t0) + "ns")
+    result
+  }
   
   /*
   val a = Extraction.sparkLocateTemperatures(2015, "/stations.csv", "/2015.csv")
@@ -72,6 +82,39 @@ object Main extends App {
   
   print(s"\nLocal ${predictedTemp} - Spark: $sparkPredictedTemp\n")
   */
+  
+  //List((Location(45.0,-90.0),85.39675195235998), (Location(-45.0,0.0),32.66137606752767)) 
+  //colors: List((85.39675195235998,Color(255,0,0)), (32.66137606752767,Color(0,0,255)))
+  /*
+  val arg0 = 85.39675195235998
+  val arg1 = 32.66137606752767
+  
+  val temperatures =
+    List(
+         (Location(45.0, -90.0), arg0),
+         (Location(-45.0, 0.0), arg1)
+        ).toIterable
+        
+  val colors = 
+    List(
+        (arg0, Color(255, 0, 0)),
+        (arg1, Color(0, 0, 255))
+        )
+        
+  val testLocation = Location(-27.0,-180.0)  
+  
+  val predictedTemp = Visualization.predictTemperature(temperatures, testLocation)
+  
+  val interpolatedColor = Visualization.interpolateColor(colors, predictedTemp)
+  
+  val image = Visualization.visualize(temperatures, colors)
+  val (x, y) = (90-testLocation.lat, testLocation.lon+180)
+  
+  val imageColor = image.color(x.toInt, y.toInt)
+  val iColor = Color(imageColor.red, imageColor.green, imageColor.blue)
+  
+  print(s"\npredictedTemp: ${predictedTemp}\ninterpolatedColor: ${interpolatedColor}\niColor: ${iColor}\n")
+  */
   /*
   val arg0Location = Location(45.0, -90.0)
   val arg1Location = Location(-45.0, 0.0)
@@ -94,7 +137,7 @@ object Main extends App {
        
   print(s"\n")
   */
-  
+  /*
   val temperatures = List((Location(45.0,-90.0),10.0), (Location(-45.0,0.0),20.0)) 
   val colors = List((10.0,Color(255,0,0)), (20.0,Color(0,0,255))) 
   val tile = Tile(0,0,0)
@@ -108,7 +151,14 @@ object Main extends App {
   val tile2 = Tile(0,0,0)
   
   val image2 = Interaction.tile(temperatures2, colors2, tile2)
-  
-  
+  */
+  /*
+  val memoizedGridLocation: GridLocation => Temperature = Memo.immutableHashMapMemo {
+         case GridLocation(lat, lon) => Thread.sleep(5000); lat+lon
+       }
+
+  val a = time{ memoizedGridLocation(GridLocation(0,0)) }
+  val b = time{ memoizedGridLocation(GridLocation(0,0)) }
+  */
   sparkSession.sparkContext.stop()
 }

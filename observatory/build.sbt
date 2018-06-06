@@ -16,6 +16,7 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "org.scalaz" %% "scalaz-core" % "7.2.24", //for Memoization
   "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.6", // for visualization
   // You don’t *have to* use Spark, but in case you want to, we have added the dependency
   "org.apache.spark" %% "spark-sql" % "2.1.0",
