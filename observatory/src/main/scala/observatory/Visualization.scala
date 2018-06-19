@@ -2,7 +2,7 @@ package observatory
 
 import com.sksamuel.scrimage.{Image, Pixel}
 
-import scala.math.{atan, cos, floor, round, sin, sqrt, toRadians}
+import scala.math.{acos, atan, cos, floor, round, sin, sqrt, toRadians}
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
@@ -17,8 +17,8 @@ object Visualization {
   val p = 2d
   val earthRadius = 6371d
   
-  val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-  import sparkSession.implicits.StringToColumn
+  //val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+  //import sparkSession.implicits.StringToColumn
 
   /**
     * @param temperatures Known temperatures: pairs containing a location and the temperature at this location
@@ -64,7 +64,7 @@ object Visualization {
       numerator/denominator
     }
   }
-  
+  /*
   def getTemperaturesDataFrame(temperatures: Iterable[(Location, Temperature)]): DataFrame = {
     def tupleToRow(r: (Location, Temperature)): Row = r match {
       case (Location(lat, lon), temp) => Row(lat, lon, temp)
@@ -116,63 +116,31 @@ object Visualization {
       numerator/denominator
     }
   }
-  
+  */
   
   def distance(coord1: Location, coord2: Location): Double = {
 
     if (coord1 == coord2) 0
     else if (antipode(coord1) == coord2) math.Pi * earthRadius
     else {
-      val phi1 = math.toRadians(coord1.lat)
-      val phi2 = math.toRadians(coord2.lat)
-      val deltaLambda = math.toRadians(math.abs(coord2.lon - coord1.lon))
+      val phi1 = toRadians(coord1.lat)
+      val phi2 = toRadians(coord2.lat)
+      val deltaLambda = toRadians((coord1.lon max coord2.lon) - (coord1.lon min coord2.lon))
 
       
-      val deltaSigma = math.acos(sin(phi1)*sin(phi2) + 
-                                 cos(phi1)*cos(phi2)*cos(deltaLambda) )
+      val deltaSigma = acos(sin(phi1)*sin(phi2) + 
+                            cos(phi1)*cos(phi2)*cos(deltaLambda) )
       
       // Distance is earth radius (in km) multiplied by deltaSigma
       deltaSigma * earthRadius
     }
   }
-	
-  /*
-  def distance(coord1: Location, coord2: Location): Double = {
-    // Using haversine function explained at: https://www.movable-type.co.uk/scripts/latlong.html
-    /*  
-    var R = 6371e3; // metres
-    var φ1 = lat1.toRadians();
-    var φ2 = lat2.toRadians();
-    var Δφ = (lat2-lat1).toRadians();
-    var Δλ = (lon2-lon1).toRadians();
-    
-    var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    
-    var d = R * c;
-    */
-    
-    val phi1 = math.toRadians(coord1.lat)
-    val phi2 = math.toRadians(coord2.lat)
-    val deltaPhi = math.toRadians(coord2.lat - coord1.lat)
-    val deltaLambda = math.toRadians(coord2.lon - coord1.lon)
-    
-    val a = math.sin(deltaPhi/2) * math.sin(deltaPhi/2) +
-            math.cos(phi1) * math.cos(phi2) *
-            math.sin(deltaLambda/2) * math.sin(deltaLambda/2)
-            
-    val c = 2 * math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-        
-    // Distance is earth radius (in km) multiplied by deltaSigma
-    earthRadius * c 
-  }
-  */
+
   
   def antipode(coord: Location): Location = {
     //Location(-coord.lat, math.signum(coord.lon)*(-1)*(180 - math.abs(coord.lon)))
-    Location(-coord.lat, coord.lon)
+    if (-180 to 180 contains coord.lon+180) Location(-coord.lat, coord.lon+180)
+    else Location(-coord.lat, coord.lon-180)
   }
 
   /**
@@ -243,24 +211,25 @@ object Visualization {
     * @return A 360×180 image where each pixel shows the predicted temperature at its location
     */
   def visualize(temperatures: Iterable[(Location, Temperature)], colors: Iterable[(Temperature, Color)]): Image = {
-
+    
     val width = 360 //pixels
     val height = 180 //pixels
 
     val image = new Array[Pixel](width*height) // new is necessary to allocate space 
 
-    for (i <- 0 until width*height) {
-      val x = floor(i/width).toInt // Image is saved as a 1 dimensional array in row format
-      val y = (i%width).toInt
-
+    val indices = for {
+      i <- 0 until width
+      j <- 0 until height
+    } yield (i, j)
+    
+    indices.par foreach {case (x, y) => 
       val interpolatedColor = interpolateColor(colors, predictTemperature(temperatures, Location(90-y, x-180)))
-      
-      image(i) = Pixel(interpolatedColor.red, interpolatedColor.green, interpolatedColor.blue, 255)
+      image(y*width + x) = Pixel(interpolatedColor.red, interpolatedColor.green, interpolatedColor.blue, 255)
     }
 
     Image(width, height, image)
   }
-
+  /*
   def sparkVisualize(temperatures: DataFrame, colors: Iterable[(Temperature, Color)]): Image = {
     
     val width = 360 //pixels
@@ -279,7 +248,7 @@ object Visualization {
 
     Image(width, height, image)
   }
-  
+  */
   def getPixelFromColor(color: Color): Pixel ={
     Pixel(color.red, color.green, color.blue, 255)
   }

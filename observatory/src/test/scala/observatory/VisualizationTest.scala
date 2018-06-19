@@ -18,8 +18,9 @@ trait VisualizationTest extends FunSuite with Checkers {
     */
     val testValues = 
       List(
-           (Location(43,15), Location(-43, 15)),
-           (Location(37,119), Location(-37,119))
+           (Location(43,15), Location(-43, -165)),
+           (Location(37,119), Location(-37, -61)),
+           (Location(-20, -10), Location(20, 170))
           ).toIterable
           
     for ((loc, expectedAntipode) <- testValues){
@@ -109,7 +110,7 @@ trait VisualizationTest extends FunSuite with Checkers {
 		 	     s"\nExpected to be closer to ${arg0} than ${arg1}")
     
   }
-  
+  /*
   test("'sparkPredictTemperature' returns expected exact temperatures") {
       val temperatures = 
         List(
@@ -138,7 +139,8 @@ trait VisualizationTest extends FunSuite with Checkers {
              s"\nPredicted temp should be equal to ${expectedTemp3}ºC." )
 
   }
-  
+  */
+  /*
   test("'sparkPredictTemperature' returns expected interpolation") {
     val arg0 = -56.39718076600975
     val arg1 = 1.0
@@ -160,7 +162,7 @@ trait VisualizationTest extends FunSuite with Checkers {
 		 	     s"\nExpected to be closer to ${arg0} than ${arg1}")
     
   }
-  
+  */
   test("'computeRange' returns expected ranges") {
     val white = Color(255, 255, 255)
     val gray = Color(127, 127, 127)
@@ -234,6 +236,10 @@ trait VisualizationTest extends FunSuite with Checkers {
     }
   }
   
+  def euclideanDistance(v1: List[Int], v2: List[Int]): Double = {
+    val in = v1 zip v2 map {case (a,b) => (a-b)*(a-b)} reduce {_+_}
+    math.sqrt(in)
+  }
   
   test("'visualize' executes properly"){
     /*
@@ -254,8 +260,7 @@ trait VisualizationTest extends FunSuite with Checkers {
 		 	Label of failing property: Incorrect computed color at Location(90.0,-180.0): Color(4,0,251). 
 		 	Expected to be closer to Color(255,0,0) than Color(0,0,255) 
      */
-    def simpleDistance(v1: List[Int], v2: List[Int]): Int = 
-      v1 zip v2 map {case (a,b) => math.abs(a-b)} reduce {_+_}
+    
           
     val arg0Color = Color(255, 0, 0)
     val arg1Color = Color(0, 0, 255)
@@ -266,11 +271,57 @@ trait VisualizationTest extends FunSuite with Checkers {
     val tempList = List( (-56.39718076600975, 1.0),
                           (-1.0, -80.17478327858342)
                         )
+
+    for (temps <- tempList){
+      val arg0 = temps._1
+      val arg1 = temps._2
+      
+      val colorScale = List((arg0, arg0Color), (arg1, arg1Color)).toIterable
+      val temperatures = List((arg0Location, arg0), (arg1Location, arg1)).toIterable
+      
+      val image = visualize(temperatures, colorScale)
+      
+      val width = 360 //pixels
+      val height = 180 //pixels
+    
+      for (x <- 0 until width){
+        for (y <- 0 until height){ 
+            
+          val testLocation = Location(90-y, x-180)
+          
+          val color = image.color(x, y)
+                                  
+          val colorList = List(color.red, color.green, color.blue)
+          val arg0ColorList = List(arg0Color.red, arg0Color.green, arg0Color.blue)
+          val arg1ColorList = List(arg1Color.red, arg1Color.green, arg1Color.blue)
+          
+          // Assert only when points are not at similar distances
+          if (Visualization.distance(testLocation, arg0Location) - 
+              Visualization.distance(testLocation, arg1Location) > 0.01){
+          
+            assert((euclideanDistance(colorList, arg0ColorList) < euclideanDistance(colorList, arg1ColorList)) == 
+                   (Visualization.distance(testLocation, arg0Location) < Visualization.distance(testLocation, arg1Location)),
+               s"Incorrect computed color at ${testLocation} (${x},${y}): Color(${color.red}, ${color.green}, ${color.blue})}. "++ 
+    		 	     s"\nExpected to be closer to ${arg0Color} than ${arg1Color}")
+          }
+        }
+      }
+    }
+  }
+  /*
+  test("'visualize' executes properly"){
+
+    val arg0Color = Color(255, 0, 0)
+    val arg1Color = Color(0, 0, 255)
+    val arg0Location = Location(45.0, -90.0)
+    val arg1Location = Location(-45.0, 0.0)
+    
+    // arg0, arg1, expected
+    val tempList = List( (-56.39718076600975, 1.0),
+                          (-1.0, -80.17478327858342)
+                        )
                         
-    val locationList = List(Location(90.0,-180.0)//,
-                            //Location(-27.0,-180.0),
-                            //Location(-90.0,-180.0)
-                            )
+    val locationList = List(Location(90.0,-180.0))
     
     for (temps <- tempList){
       val arg0 = temps._1
@@ -281,7 +332,16 @@ trait VisualizationTest extends FunSuite with Checkers {
       
       val image = visualize(temperatures, colorScale)
       
-      for(testLocation <- locationList){
+      val width = 360 //pixels
+      val height = 180 //pixels
+    
+      for (i <- 0 until width*height) {
+        val x = (i/width).floor.toInt // Image is saved as a 1 dimensional array in row format
+        val y = (i%width).toInt
+      
+        val testLocation = Location(90-y, x-180)
+        
+      //for(testLocation <- locationList){
         //lat=90-y -> y = 90 - lat
         //lon=x-180 -> x = lon +180
         val color = image.color(math.floor(90-testLocation.lat).toInt, 
@@ -290,14 +350,21 @@ trait VisualizationTest extends FunSuite with Checkers {
         val colorList = List(color.red, color.green, color.blue)
         val arg0ColorList = List(arg0Color.red, arg0Color.green, arg0Color.blue)
         val arg1ColorList = List(arg1Color.red, arg1Color.green, arg1Color.blue)
-                                
-        assert(simpleDistance(colorList, arg0ColorList) < simpleDistance(colorList, arg1ColorList),
-           s"Incorrect computed color at ${testLocation}: Color(${color.red}, ${color.green}, ${color.blue})}. "++ 
-		 	     s"\nExpected to be closer to ${arg0Color} than ${arg1Color}")
-      }
         
+        // Assert only when points are not at similar distances
+        if (Visualization.distance(testLocation, arg0Location) - 
+            Visualization.distance(testLocation, arg1Location) > 0.01){
+        
+          assert((euclideanDistance(colorList, arg0ColorList) < euclideanDistance(colorList, arg1ColorList)) == 
+                 (Visualization.distance(testLocation, arg0Location) < Visualization.distance(testLocation, arg1Location)),
+             s"Incorrect computed color at ${testLocation} (${x},${y}): Color(${color.red}, ${color.green}, ${color.blue})}. "++ 
+  		 	     s"\nExpected to be closer to ${arg0Color} than ${arg1Color}")
+        }
+      }
     }
   }
+  */
+  
   /*
   test("'sparkVisualize' executes properly"){
   

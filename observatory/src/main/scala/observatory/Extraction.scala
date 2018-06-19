@@ -16,8 +16,8 @@ import org.apache.spark.sql.functions._
   */
 object Extraction {
   
-  val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-  import sparkSession.implicits.StringToColumn
+  //val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+  //import sparkSession.implicits.StringToColumn
 
   
   /**
@@ -97,7 +97,7 @@ object Extraction {
     val m = scala.math.pow(10, n)
     (x * m).round / m
   }
-  
+  /*
   def sparkLocateTemperatures(year: Year, stationsFile: String, temperaturesFile: String): DataFrame = {
     
     val (_, stationsDf) = readDf(stationsFile, true)
@@ -127,7 +127,8 @@ object Extraction {
                    .drop($"wban2")
                    .withColumn("year", lit(year))   
   }
-  
+  */
+  /*
   /** @return The read DataFrame with the given named columns. */
   def readDf(resource: String, stationsCsv: Boolean): (List[String], DataFrame) = {    
     val columnNames = 
@@ -150,7 +151,7 @@ object Extraction {
 
     (columnNames, dataFrame)
   }
-
+	*/
   def fsPath(resource: String): String = 
     Paths.get(getClass.getResource(resource).toURI).toString
     
@@ -196,12 +197,12 @@ object Extraction {
     case (date, Location(lat, lon), temp) => 
       Row(lat, lon, date.getMonthValue(), date.getDayOfMonth(), temp, date.getYear())
   }
-
+  /*
   def sparkLocationYearlyAverageRecords(records: DataFrame): DataFrame = {
     records
       .groupBy($"year", $"lat", $"lon")
       .agg(avg($"temp").as("temp"))
       .drop("year")
   }
-  
+  */
 }

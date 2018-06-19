@@ -53,7 +53,7 @@ trait ExtractionTest extends FunSuite with BeforeAndAfterAll  {
     assert(struct === expectedStruct, 
            s"\nStructs are different. Found: $struct. Expected: $expectedStruct" )
   }
-  
+  /*
   test("'readDf' creates the expected type of Dataframe [Stations]") {    
     val (columnsStations, stationsDf) = readDf("/test-stations.csv", true)
     
@@ -69,7 +69,7 @@ trait ExtractionTest extends FunSuite with BeforeAndAfterAll  {
     
     assert(collectedArray === expectedArray)
   }
-  
+  */
   test("'readStations' creates the expected type of Iterable") {    
     val stations = readStations("/test-stations2.csv")
         

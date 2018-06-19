@@ -1,7 +1,7 @@
 package observatory
 import org.apache.log4j.{Level, Logger}
 //import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
+//import org.apache.spark.sql.SparkSession
 
 //import scalaz._
 
@@ -9,7 +9,7 @@ import org.apache.spark.sql.SparkSession
 object Main extends App {
   //Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
   
-  val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+  //val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
   
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
@@ -160,5 +160,5 @@ object Main extends App {
   val a = time{ memoizedGridLocation(GridLocation(0,0)) }
   val b = time{ memoizedGridLocation(GridLocation(0,0)) }
   */
-  sparkSession.sparkContext.stop()
+  //sparkSession.sparkContext.stop()
 }
